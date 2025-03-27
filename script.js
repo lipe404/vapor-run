@@ -142,12 +142,24 @@ class Enemy {
      * Verifica colisão com o jogador
      */
     collidesWith(player) {
-        // Detecção de colisão AABB (Axis-Aligned Bounding Box)
-        return (
-            player.x < this.x + this.width * this.scale &&
-            player.x + player.width > this.x &&
-            player.y < this.y + this.height * this.scale &&
-            player.y + player.height > this.y
+        // Calcula os limites do inimigo considerando a escala
+        const enemyLeft = this.x;
+        const enemyRight = this.x + this.width * this.scale;
+        const enemyTop = this.y;
+        const enemyBottom = this.y + this.height * this.scale;
+        
+        // Calcula os limites do jogador
+        const playerLeft = player.x;
+        const playerRight = player.x + player.width;
+        const playerTop = player.y;
+        const playerBottom = player.y + player.height;
+        
+        // Verifica se há sobreposição em ambos os eixos
+        return !(
+            enemyRight < playerLeft || 
+            enemyLeft > playerRight || 
+            enemyBottom < playerTop || 
+            enemyTop > playerBottom
         );
     }
 }
