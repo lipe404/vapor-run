@@ -1,65 +1,103 @@
-// Constantes do jogo
+/**
+ * CONSTANTES DE CONFIGURAÇÃO DO JOGO
+ * Todas as configurações ajustáveis do jogo ficam aqui para fácil modificação
+ */
 const GAME_CONFIG = {
-    PLAYER_SPEED: 7,
-    ENEMY_SPAWN_RATE: 0.02,
-    ENEMY_MIN_SPEED: 2,
-    ENEMY_MAX_SPEED: 5,
-    ENEMY_GROWTH_RATE: 0.03,
-    SCORE_INCREMENT: 1,
-    PLAYER_WIDTH: 50,
-    PLAYER_HEIGHT: 100,
-    ENEMY_INITIAL_WIDTH: 20,
-    ENEMY_INITIAL_HEIGHT: 40
+    PLAYER_SPEED: 7,               // Velocidade de movimento do jogador
+    ENEMY_SPAWN_RATE: 0.02,        // Chance de spawnar inimigo a cada frame (0-1)
+    ENEMY_MIN_SPEED: 2,            // Velocidade mínima dos inimigos
+    ENEMY_MAX_SPEED: 5,            // Velocidade máxima dos inimigos
+    ENEMY_GROWTH_RATE: 0.03,       // Taxa de crescimento dos inimigos (efeito de aproximação)
+    SCORE_INCREMENT: 1,            // Pontos ganhos por inimigo evitado
+    PLAYER_WIDTH: 50,              // Largura do jogador
+    PLAYER_HEIGHT: 100,            // Altura do jogador
+    ENEMY_INITIAL_WIDTH: 20,       // Largura inicial dos inimigos
+    ENEMY_INITIAL_HEIGHT: 40,      // Altura inicial dos inimigos
+    ENEMY_TURN_POINT: 0.4,         // Ponto da tela onde inimigos mudam direção (0-1)
+    ASPECT_RATIO: 0.8,             // Proporção do canvas em relação à janela (largura)
+    VERTICAL_RATIO: 0.9            // Proporção do canvas em relação à janela (altura)
 };
 
-// Variáveis globais
-let canvas, ctx;
-let gameStarted = false;
-let gameOver = false;
-let lastFrameTime = 0;
-let player, enemies = [], score = 0;
-let keys = { left: false, right: false };
-let images = {};
-let assetsLoaded = false;
+/**
+ * VARIÁVEIS GLOBAIS DO JOGO
+ * Estado atual do jogo e elementos principais
+ */
+let canvas, ctx;                   // Elementos do canvas e contexto 2D
+let gameStarted = false;           // Flag indicando se o jogo começou
+let gameOver = false;              // Flag indicando se o jogo terminou
+let lastFrameTime = 0;             // Timestamp do último frame (para cálculo de deltaTime)
+let player;                        // Objeto do jogador
+let enemies = [];                  // Array de inimigos ativos
+let score = 0;                     // Pontuação atual
+let keys = { left: false, right: false }; // Estado das teclas pressionadas
+let images = {};                   // Objeto para armazenar imagens carregadas
+let assetsLoaded = false;          // Flag indicando se assets foram carregados
 
-// Classes para organização do código
+/**
+ * CLASSE PLAYER
+ * Representa o jogador e seu comportamento
+ */
 class Player {
     constructor(x, y, width, height) {
-        this.x = x;
-        this.y = y;
-        this.width = width;
-        this.height = height;
-        this.speed = GAME_CONFIG.PLAYER_SPEED;
+        this.x = x;                // Posição X inicial
+        this.y = y;                // Posição Y inicial
+        this.width = width;        // Largura do sprite
+        this.height = height;      // Altura do sprite
+        this.speed = GAME_CONFIG.PLAYER_SPEED; // Velocidade de movimento
     }
 
+    /**
+     * Desenha o jogador na tela
+     */
     draw() {
         if (images.car && assetsLoaded) {
             ctx.drawImage(images.car, this.x, this.y, this.width, this.height);
         }
     }
 
+    /**
+     * Atualiza a posição do jogador baseado nas teclas pressionadas
+     */
     update() {
+        // Movimento para esquerda com limite na borda
         if (keys.left && this.x > 0) {
             this.x -= this.speed;
         }
+        // Movimento para direita com limite na borda
         if (keys.right && this.x < canvas.width - this.width) {
             this.x += this.speed;
         }
     }
 }
 
+/**
+ * CLASSE ENEMY
+ * Representa os inimigos e seu comportamento
+ */
 class Enemy {
     constructor(x, y) {
-        this.x = x;
-        this.y = y;
+        this.x = x;                // Posição X inicial (centro da tela)
+        this.y = y;                // Posição Y inicial (topo da tela)
         this.width = GAME_CONFIG.ENEMY_INITIAL_WIDTH;
         this.height = GAME_CONFIG.ENEMY_INITIAL_HEIGHT;
+        // Velocidade aleatória dentro dos limites configurados
         this.speed = Math.random() * (GAME_CONFIG.ENEMY_MAX_SPEED - GAME_CONFIG.ENEMY_MIN_SPEED) + GAME_CONFIG.ENEMY_MIN_SPEED;
-        this.scale = 0.5;
+        this.scale = 0.5;          // Escala inicial (efeito de perspectiva)
+        // Direção aleatória (esquerda ou direita)
+        this.direction = Math.random() > 0.5 ? 1 : -1;
+        this.turned = false;       // Flag indicando se já iniciou movimento diagonal
     }
 
+    /**
+     * Desenha o inimigo na tela com efeito vaporwave
+     */
     draw() {
         if (images.enemy && assetsLoaded) {
+            ctx.save(); // Salva o estado atual do contexto
+            // Aplica efeito de brilho neon
+            ctx.shadowColor = '#ff00ff';
+            ctx.shadowBlur = 5;
+            // Desenha o inimigo com escala atual
             ctx.drawImage(
                 images.enemy, 
                 this.x, 
@@ -67,19 +105,44 @@ class Enemy {
                 this.width * this.scale, 
                 this.height * this.scale
             );
+            ctx.restore(); // Restaura o estado do contexto
         }
     }
 
+    /**
+     * Atualiza a posição e escala do inimigo
+     */
     update() {
+        // Movimento vertical (descendo)
         this.y += this.speed;
+        // Aumenta a escala (efeito de aproximação)
         this.scale += GAME_CONFIG.ENEMY_GROWTH_RATE;
+        
+        // Verifica se atingiu o ponto de mudança de direção
+        if (!this.turned && this.y > canvas.height * GAME_CONFIG.ENEMY_TURN_POINT) {
+            this.turned = true;
+        }
+        
+        // Se já passou do ponto de virada, move-se horizontalmente
+        if (this.turned) {
+            this.x += this.speed * 0.7 * this.direction; // 70% da velocidade vertical
+        }
     }
 
+    /**
+     * Verifica se o inimigo saiu dos limites da tela
+     */
     isOutOfBounds() {
-        return this.y > canvas.height;
+        return this.y > canvas.height ||    // Saiu pela parte inferior
+               this.x < -this.width * this.scale || // Saiu pela esquerda
+               this.x > canvas.width;       // Saiu pela direita
     }
 
+    /**
+     * Verifica colisão com o jogador
+     */
     collidesWith(player) {
+        // Detecção de colisão AABB (Axis-Aligned Bounding Box)
         return (
             player.x < this.x + this.width * this.scale &&
             player.x + player.width > this.x &&
@@ -89,34 +152,46 @@ class Enemy {
     }
 }
 
-// Inicialização do jogo
+/**
+ * INICIALIZAÇÃO DO JOGO
+ * Configura canvas, carrega assets e prepara o jogo
+ */
 function init() {
+    // Obtém referências do canvas e contexto
     canvas = document.getElementById('gameCanvas');
     ctx = canvas.getContext('2d');
+    
+    // Ajusta o tamanho do canvas
     resizeCanvas();
     
-    // Carregar assets
-    loadAssets().then(() => {
-        assetsLoaded = true;
-        resetGame();
-        showStartScreen();
-    }).catch(error => {
-        console.error("Erro ao carregar assets:", error);
-        // Fallback básico se as imagens não carregarem
-        assetsLoaded = false;
-        resetGame();
-        showStartScreen();
-    });
+    // Carrega os assets (imagens)
+    loadAssets()
+        .then(() => {
+            assetsLoaded = true;
+            resetGame();
+            showStartScreen();
+        })
+        .catch(error => {
+            console.error("Erro ao carregar assets:", error);
+            // Fallback caso as imagens não carreguem
+            assetsLoaded = false;
+            resetGame();
+            showStartScreen();
+        });
 
-    // Event listeners
+    // Configura listeners de eventos
     document.addEventListener('keydown', keyDownHandler);
     document.addEventListener('keyup', keyUpHandler);
     window.addEventListener('resize', resizeCanvas);
 }
 
-// Carregamento de assets com Promise
+/**
+ * CARREGAMENTO DE ASSETS
+ * Carrega todas as imagens necessárias usando Promises
+ */
 function loadAssets() {
     return new Promise((resolve, reject) => {
+        // Mapeamento de assets
         const assets = {
             startScreen: 'imgs/fundo2.jpg',
             road: 'imgs/road2.jpg',
@@ -127,6 +202,7 @@ function loadAssets() {
         let loaded = 0;
         const total = Object.keys(assets).length;
         
+        // Carrega cada imagem
         images = Object.keys(assets).reduce((acc, key) => {
             acc[key] = new Image();
             acc[key].onload = () => {
@@ -136,7 +212,7 @@ function loadAssets() {
             acc[key].onerror = () => {
                 console.error(`Erro ao carregar imagem: ${assets[key]}`);
                 loaded++;
-                if (loaded === total) resolve(); // Continuar mesmo com erros
+                if (loaded === total) resolve(); // Continua mesmo com erros
             };
             acc[key].src = assets[key];
             return acc;
@@ -144,32 +220,45 @@ function loadAssets() {
     });
 }
 
-// Redimensionar canvas
+/**
+ * REDIMENSIONAMENTO DO CANVAS
+ * Ajusta o canvas para o tamanho da janela mantendo proporções
+ */
 function resizeCanvas() {
-    canvas.width = window.innerWidth * 0.8;
-    canvas.height = window.innerHeight * 0.9;
+    // Define tamanho baseado na janela e proporções configuradas
+    canvas.width = window.innerWidth * GAME_CONFIG.ASPECT_RATIO;
+    canvas.height = window.innerHeight * GAME_CONFIG.VERTICAL_RATIO;
     
+    // Reposiciona o jogador se existir
     if (player) {
         player.x = canvas.width / 2 - player.width / 2;
         player.y = canvas.height - player.height - 20;
     }
 }
 
-// Resetar estado do jogo
+/**
+ * RESET DO JOGO
+ * Prepara um novo estado inicial do jogo
+ */
 function resetGame() {
+    // Cria novo jogador na posição inicial
     player = new Player(
         canvas.width / 2 - GAME_CONFIG.PLAYER_WIDTH / 2,
         canvas.height - GAME_CONFIG.PLAYER_HEIGHT - 20,
         GAME_CONFIG.PLAYER_WIDTH,
         GAME_CONFIG.PLAYER_HEIGHT
     );
-    enemies = [];
-    score = 0;
-    gameOver = false;
+    enemies = []; // Limpa array de inimigos
+    score = 0;    // Zera pontuação
+    gameOver = false; // Reseta estado do jogo
 }
 
-// Tela inicial
+/**
+ * TELA INICIAL
+ * Exibe a tela de início com efeitos vaporwave
+ */
 function showStartScreen() {
+    // Tela de carregamento se assets não estiverem prontos
     if (!assetsLoaded) {
         ctx.fillStyle = 'black';
         ctx.fillRect(0, 0, canvas.width, canvas.height);
@@ -180,28 +269,49 @@ function showStartScreen() {
         return;
     }
 
+    // Desenha imagem de fundo
     ctx.drawImage(images.startScreen, 0, 0, canvas.width, canvas.height);
-    ctx.fillStyle = 'rgba(0, 0, 0, 0.7)';
+    
+    // Overlay semi-transparente para melhor legibilidade
+    ctx.fillStyle = 'rgba(0, 0, 0, 0.4)';
     ctx.fillRect(0, 0, canvas.width, canvas.height);
     
+    // Configura estilo do texto principal
     ctx.fillStyle = '#00ffff';
     ctx.font = '24px "Press Start 2P", cursive';
     ctx.textAlign = 'center';
     
-    // Efeito de glitch no texto
+    // Efeito de glitch aleatório no texto
     const glitchOffset = Math.random() * 2 - 1;
-    ctx.fillText('V A P O R R U N', canvas.width / 2 + glitchOffset, canvas.height / 2 - 50);
+    const glitchOffsetY = Math.random() * 2 - 1;
     
+    // Efeito neon com sombra
+    ctx.shadowColor = '#ff00ff';
+    ctx.shadowBlur = 10;
+    ctx.fillText('V A P O R R U N', canvas.width / 2 + glitchOffset, canvas.height / 2 - 50 + glitchOffsetY);
+    
+    // Remove sombra para próximos textos
+    ctx.shadowBlur = 0;
+    
+    // Texto de instrução
     ctx.font = '16px "Press Start 2P", cursive';
-    ctx.fillText('Pressione ENTER para começar', canvas.width / 2, canvas.height / 2 + 20);
+    ctx.fillStyle = '#ffffff';
     
-    // Solicitar próximo frame para animação
+    // Efeito de piscar (90% de chance de desenhar)
+    if (Math.random() > 0.1) {
+        ctx.fillText('Pressione ENTER para começar', canvas.width / 2, canvas.height / 2 + 20);
+    }
+    
+    // Animação contínua da tela inicial
     if (!gameStarted) {
         requestAnimationFrame(showStartScreen);
     }
 }
 
-// Iniciar jogo
+/**
+ * INICIAR JOGO
+ * Começa o loop principal do jogo
+ */
 function startGame() {
     gameStarted = true;
     gameOver = false;
@@ -210,40 +320,53 @@ function startGame() {
     gameLoop(lastFrameTime);
 }
 
-// Loop principal do jogo
+/**
+ * LOOP PRINCIPAL DO JOGO
+ * Controla a execução frame a frame do jogo
+ */
 function gameLoop(timestamp) {
+    // Sai do loop se o jogo não estiver ativo
     if (!gameStarted || gameOver) return;
     
-    // Calcular delta time para movimento consistente em diferentes FPS
+    // Calcula tempo desde o último frame para movimento consistente
     const deltaTime = timestamp - lastFrameTime;
     lastFrameTime = timestamp;
     
+    // Atualiza estado do jogo e renderiza
     update(deltaTime);
     render();
     
+    // Solicita próximo frame
     requestAnimationFrame(gameLoop);
 }
 
-// Atualizar estado do jogo
+/**
+ * ATUALIZAÇÃO DO JOGO
+ * Atualiza todos os elementos do jogo
+ */
 function update(deltaTime) {
+    // Normaliza movimento baseado no tempo (para FPS consistente)
+    const normalizedDelta = deltaTime / 16; // 16ms ≈ 60fps
+    
+    // Atualiza posição do jogador
     player.update();
     
-    // Spawn de inimigos
+    // Chance de spawnar novo inimigo
     if (Math.random() < GAME_CONFIG.ENEMY_SPAWN_RATE) {
         spawnEnemy();
     }
     
-    // Atualizar inimigos
+    // Atualiza todos os inimigos
     for (let i = enemies.length - 1; i >= 0; i--) {
         enemies[i].update();
         
-        // Verificar colisões
+        // Verifica colisão com jogador
         if (enemies[i].collidesWith(player)) {
             endGame();
             return;
         }
         
-        // Remover inimigos fora da tela
+        // Remove inimigos que saíram da tela e incrementa pontuação
         if (enemies[i].isOutOfBounds()) {
             enemies.splice(i, 1);
             score += GAME_CONFIG.SCORE_INCREMENT;
@@ -251,12 +374,15 @@ function update(deltaTime) {
     }
 }
 
-// Renderizar o jogo
+/**
+ * RENDERIZAÇÃO DO JOGO
+ * Desenha todos os elementos na tela
+ */
 function render() {
-    // Limpar canvas
+    // Limpa o canvas
     ctx.clearRect(0, 0, canvas.width, canvas.height);
     
-    // Desenhar fundo
+    // Desenha fundo (imagem ou fallback)
     if (assetsLoaded && images.road) {
         ctx.drawImage(images.road, 0, 0, canvas.width, canvas.height);
     } else {
@@ -264,23 +390,29 @@ function render() {
         ctx.fillRect(0, 0, canvas.width, canvas.height);
     }
     
-    // Desenhar jogador
+    // Desenha jogador
     player.draw();
     
-    // Desenhar inimigos
+    // Desenha todos os inimigos
     enemies.forEach(enemy => enemy.draw());
     
-    // Desenhar score
+    // Desenha pontuação
     drawScore();
 }
 
-// Criar novo inimigo
+/**
+ * SPAWN DE INIMIGOS
+ * Cria um novo inimigo no topo central da tela
+ */
 function spawnEnemy() {
-    const xPos = Math.random() * (canvas.width - GAME_CONFIG.ENEMY_INITIAL_WIDTH);
+    const xPos = canvas.width / 2 - GAME_CONFIG.ENEMY_INITIAL_WIDTH / 2;
     enemies.push(new Enemy(xPos, -GAME_CONFIG.ENEMY_INITIAL_HEIGHT));
 }
 
-// Desenhar pontuação
+/**
+ * DESENHA PONTUAÇÃO
+ * Exibe a pontuação atual no canto superior esquerdo
+ */
 function drawScore() {
     ctx.fillStyle = 'white';
     ctx.font = '20px "Press Start 2P", cursive';
@@ -288,33 +420,79 @@ function drawScore() {
     ctx.fillText(`SCORE: ${score}`, 20, 30);
 }
 
-// Finalizar jogo
+/**
+ * FIM DE JOGO
+ * Exibe tela de game over com estilo vaporwave
+ */
 function endGame() {
     gameOver = true;
     
-    // Desenhar tela de game over
-    ctx.fillStyle = 'rgba(0, 0, 0, 0.7)';
+    // Fundo semi-transparente
+    ctx.fillStyle = 'rgba(32, 0, 44, 0.85)';
     ctx.fillRect(0, 0, canvas.width, canvas.height);
     
-    ctx.fillStyle = '#ff1493';
-    ctx.font = '24px "Press Start 2P", cursive';
-    ctx.textAlign = 'center';
-    ctx.fillText('GAME OVER', canvas.width / 2, canvas.height / 2 - 30);
+    // Efeito de glitch aleatório
+    const glitchOffsetX = Math.random() * 4 - 2;
+    const glitchOffsetY = Math.random() * 4 - 2;
     
-    ctx.fillStyle = 'white';
+    // Texto principal com efeito neon
+    ctx.fillStyle = '#ff1493';
+    ctx.font = '30px "Press Start 2P", cursive';
+    ctx.textAlign = 'center';
+    ctx.shadowColor = '#00ffff';
+    ctx.shadowBlur = 15;
+    ctx.fillText('GAME OVER', canvas.width / 2 + glitchOffsetX, canvas.height / 2 - 30 + glitchOffsetY);
+    
+    // Pontuação final
+    ctx.fillStyle = '#00ffff';
+    ctx.shadowColor = '#ff00ff';
+    ctx.font = '20px "Press Start 2P", cursive';
+    ctx.fillText(`PONTUAÇÃO: ${score}`, canvas.width / 2, canvas.height / 2 + 20);
+    
+    // Instrução para recomeçar
+    ctx.fillStyle = '#ffffff';
+    ctx.shadowColor = '#ff1493';
     ctx.font = '16px "Press Start 2P", cursive';
-    ctx.fillText(`Pontuação: ${score}`, canvas.width / 2, canvas.height / 2 + 10);
-    ctx.fillText('Pressione ENTER para jogar novamente', canvas.width / 2, canvas.height / 2 + 50);
+    ctx.fillText('Pressione ENTER para jogar novamente', canvas.width / 2, canvas.height / 2 + 60);
+    
+    // Remove efeitos de sombra
+    ctx.shadowBlur = 0;
+    
+    // Efeito de partículas vaporwave
+    drawVaporwaveParticles();
 }
 
-// Handlers de teclado
+/**
+ * EFEITO DE PARTÍCULAS VAPORWAVE
+ * Desenha partículas coloridas aleatórias
+ */
+function drawVaporwaveParticles() {
+    // Cores características do estilo vaporwave
+    const colors = ['#ff00ff', '#00ffff', '#ff1493', '#9400d3'];
+    
+    // Desenha 20 partículas aleatórias
+    for (let i = 0; i < 20; i++) {
+        const size = Math.random() * 5;
+        const x = Math.random() * canvas.width;
+        const y = Math.random() * canvas.height;
+        const color = colors[Math.floor(Math.random() * colors.length)];
+        
+        ctx.fillStyle = color;
+        ctx.beginPath();
+        ctx.arc(x, y, size, 0, Math.PI * 2);
+        ctx.fill();
+    }
+}
+
+/**
+ * HANDLER DE TECLAS PRESSIONADAS
+ */
 function keyDownHandler(e) {
-    if (e.key === 'Enter' && !gameStarted) {
+    // Enter inicia ou reinicia o jogo
+    if (e.key === 'Enter' && (!gameStarted || gameOver)) {
         startGame();
     }
-    if (e.key === 'Enter' && gameOver) {
-        startGame();
-    }
+    // Setas movem o jogador
     if (e.key === 'ArrowLeft') {
         keys.left = true;
     }
@@ -323,6 +501,9 @@ function keyDownHandler(e) {
     }
 }
 
+/**
+ * HANDLER DE TECLAS LIBERADAS
+ */
 function keyUpHandler(e) {
     if (e.key === 'ArrowLeft') {
         keys.left = false;
@@ -332,5 +513,5 @@ function keyUpHandler(e) {
     }
 }
 
-// Iniciar quando a janela carregar
+// Inicia o jogo quando a página carregar
 window.addEventListener('load', init);
