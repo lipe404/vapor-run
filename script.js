@@ -208,7 +208,7 @@ function loadAssets() {
         // Mapeamento de assets
         const assets = {
             startScreen: 'imgs/fundo2.jpg',
-            road: 'imgs/road2.jpg',
+            road: 'imgs/roadest.jpg',
             car: 'imgs/car.png',
             enemy: 'imgs/enemy.png'
         };
