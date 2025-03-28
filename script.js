@@ -3,17 +3,17 @@
  * Todas as configurações ajustáveis do jogo ficam aqui para fácil modificação
  */
 const GAME_CONFIG = {
-    PLAYER_SPEED: 7,               // Velocidade de movimento do jogador
+    PLAYER_SPEED: 9,               // Velocidade de movimento do jogador
     ENEMY_SPAWN_RATE: 0.02,        // Chance de spawnar inimigo a cada frame (0-1)
-    ENEMY_MIN_SPEED: 2,            // Velocidade mínima dos inimigos
-    ENEMY_MAX_SPEED: 5,            // Velocidade máxima dos inimigos
+    ENEMY_MIN_SPEED: 3,            // Velocidade mínima dos inimigos
+    ENEMY_MAX_SPEED: 7,            // Velocidade máxima dos inimigos
     ENEMY_GROWTH_RATE: 0.03,       // Taxa de crescimento dos inimigos (efeito de aproximação)
     SCORE_INCREMENT: 1,            // Pontos ganhos por inimigo evitado
-    PLAYER_WIDTH: 50,              // Largura do jogador
+    PLAYER_WIDTH: 100,              // Largura do jogador
     PLAYER_HEIGHT: 100,            // Altura do jogador
     ENEMY_INITIAL_WIDTH: 20,       // Largura inicial dos inimigos
     ENEMY_INITIAL_HEIGHT: 40,      // Altura inicial dos inimigos
-    ENEMY_TURN_POINT: 0.4,         // Ponto da tela onde inimigos mudam direção (0-1)
+    ENEMY_TURN_POINT: 0.5,         // Ponto da tela onde inimigos mudam direção (0-1)
     ASPECT_RATIO: 0.8,             // Proporção do canvas em relação à janela (largura)
     VERTICAL_RATIO: 0.9            // Proporção do canvas em relação à janela (altura)
 };
@@ -82,7 +82,7 @@ class Enemy {
         this.height = GAME_CONFIG.ENEMY_INITIAL_HEIGHT;
         // Velocidade aleatória dentro dos limites configurados
         this.speed = Math.random() * (GAME_CONFIG.ENEMY_MAX_SPEED - GAME_CONFIG.ENEMY_MIN_SPEED) + GAME_CONFIG.ENEMY_MIN_SPEED;
-        this.scale = 0.5;          // Escala inicial (efeito de perspectiva)
+        this.scale = 0.4;          // Escala inicial (efeito de perspectiva)
         // Direção aleatória (esquerda ou direita)
         this.direction = Math.random() > 0.5 ? 1 : -1;
         this.turned = false;       // Flag indicando se já iniciou movimento diagonal
@@ -374,6 +374,10 @@ function update(deltaTime) {
         
         // Verifica colisão com jogador
         if (enemies[i].collidesWith(player)) {
+            // Efeito sonoro de colisão (opcional)
+            if (typeof playCrashSound === 'function') {
+                playCrashSound();
+            }
             endGame();
             return;
         }
@@ -393,6 +397,9 @@ function update(deltaTime) {
 function render() {
     // Limpa o canvas
     ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+    // Aplica tremor se estiver ativo
+    applyScreenShake();
     
     // Desenha fundo (imagem ou fallback)
     if (assetsLoaded && images.road) {
@@ -433,11 +440,86 @@ function drawScore() {
 }
 
 /**
+ * EFEITO DE TREMOR NA TELA
+ * Simula um tremor quando ocorre colisão
+ */
+let shakeIntensity = 0;
+
+function applyScreenShake() {
+    if (shakeIntensity > 0) {
+        const x = (Math.random() - 0.5) * shakeIntensity;
+        const y = (Math.random() - 0.5) * shakeIntensity;
+        ctx.setTransform(1, 0, 0, 1, x, y);
+        shakeIntensity *= 0.9; // Reduz a intensidade gradualmente
+        
+        if (shakeIntensity < 0.1) {
+            shakeIntensity = 0;
+            ctx.setTransform(1, 0, 0, 1, 0, 0);
+        }
+    }
+}
+
+/**
  * FIM DE JOGO
  * Exibe tela de game over com estilo vaporwave
  */
 function endGame() {
     gameOver = true;
+    shakeIntensity = 15; // Inicia o tremor
+
+    // Efeito de flash vermelho no momento da colisão
+    ctx.fillStyle = 'rgba(255, 0, 0, 0.3)';
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+    // Aguarda um frame antes de mostrar a tela de game over completa
+    requestAnimationFrame(() => {
+        // Fundo semi-transparente com gradiente vaporwave
+        const gradient = ctx.createLinearGradient(0, 0, canvas.width, canvas.height);
+        gradient.addColorStop(0, 'rgba(32, 0, 44, 0.9)');
+        gradient.addColorStop(1, 'rgba(148, 0, 211, 0.9)');
+        
+        ctx.fillStyle = gradient;
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+        
+        // Efeito de glitch mais intenso
+        const glitchOffsetX = Math.random() * 8 - 4;
+        const glitchOffsetY = Math.random() * 8 - 4;
+        
+        // Texto principal com múltiplas sombras para efeito neon
+        ctx.fillStyle = '#ff1493';
+        ctx.font = '30px "Press Start 2P", cursive';
+        ctx.textAlign = 'center';
+        
+        // Efeito de múltiplas sombras
+        for (let i = 0; i < 3; i++) {
+            ctx.shadowColor = i % 2 === 0 ? '#00ffff' : '#ff00ff';
+            ctx.shadowBlur = 15 - i * 5;
+            ctx.fillText('COLISÃO!', canvas.width / 2 + glitchOffsetX, canvas.height / 2 - 60 + glitchOffsetY);
+        }
+        
+        // Texto "GAME OVER" abaixo
+        ctx.shadowColor = '#00ffff';
+        ctx.shadowBlur = 15;
+        ctx.fillText('GAME OVER', canvas.width / 2, canvas.height / 2 - 20);
+        
+        // Pontuação final
+        ctx.fillStyle = '#00ffff';
+        ctx.shadowColor = '#ff00ff';
+        ctx.font = '20px "Press Start 2P", cursive';
+        ctx.fillText(`Pontuação: ${score}`, canvas.width / 2, canvas.height / 2 + 20);
+        
+        // Instrução para recomeçar
+        ctx.fillStyle = '#ffffff';
+        ctx.shadowColor = '#ff1493';
+        ctx.font = '16px "Press Start 2P", cursive';
+        ctx.fillText('Pressione ENTER para continuar', canvas.width / 2, canvas.height / 2 + 60);
+        
+        // Remove efeitos de sombra
+        ctx.shadowBlur = 0;
+        
+        // Efeito de partículas vaporwave mais intenso
+        drawExplosionParticles(canvas.width / 2, canvas.height / 2);
+    });
     
     // Fundo semi-transparente
     ctx.fillStyle = 'rgba(32, 0, 44, 0.85)';
@@ -481,6 +563,7 @@ function endGame() {
 function drawVaporwaveParticles() {
     // Cores características do estilo vaporwave
     const colors = ['#ff00ff', '#00ffff', '#ff1493', '#9400d3'];
+    const particleCount = 30;
     
     // Desenha 20 partículas aleatórias
     for (let i = 0; i < 20; i++) {
