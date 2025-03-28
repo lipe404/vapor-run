@@ -32,6 +32,9 @@ let score = 0;                     // Pontuação atual
 let keys = { left: false, right: false }; // Estado das teclas pressionadas
 let images = {};                   // Objeto para armazenar imagens carregadas
 let assetsLoaded = false;          // Flag indicando se assets foram carregados
+// Adicione isso junto com as outras variáveis globais
+let roadOffset = 0;
+const ROAD_SPEED = 5; // Velocidade de movimento da estrada
 
 /**
  * CLASSE PLAYER
@@ -76,16 +79,15 @@ class Player {
  */
 class Enemy {
     constructor(x, y) {
-        this.x = x;                // Posição X inicial (centro da tela)
-        this.y = y;                // Posição Y inicial (topo da tela)
+        this.x = x;
+        this.y = y;
         this.width = GAME_CONFIG.ENEMY_INITIAL_WIDTH;
         this.height = GAME_CONFIG.ENEMY_INITIAL_HEIGHT;
-        // Velocidade aleatória dentro dos limites configurados
-        this.speed = Math.random() * (GAME_CONFIG.ENEMY_MAX_SPEED - GAME_CONFIG.ENEMY_MIN_SPEED) + GAME_CONFIG.ENEMY_MIN_SPEED;
-        this.scale = 0.4;          // Escala inicial (efeito de perspectiva)
-        // Direção aleatória (esquerda ou direita)
+        // Ajuste a velocidade para combinar com o movimento da estrada
+        this.speed = Math.random() * (GAME_CONFIG.ENEMY_MAX_SPEED - GAME_CONFIG.ENEMY_MIN_SPEED) + GAME_CONFIG.ENEMY_MIN_SPEED + ROAD_SPEED;
+        this.scale = 0.4;
         this.direction = Math.random() > 0.5 ? 1 : -1;
-        this.turned = false;       // Flag indicando se já iniciou movimento diagonal
+        this.turned = false;
     }
 
     /**
@@ -263,6 +265,7 @@ function resetGame() {
     enemies = []; // Limpa array de inimigos
     score = 0;    // Zera pontuação
     gameOver = false; // Reseta estado do jogo
+    roadOffset = 0; // Reseta a posição da estrada
 }
 
 /**
@@ -353,6 +356,28 @@ function gameLoop(timestamp) {
 }
 
 /**
+ * DESENHA A ESTRADA EM MOVIMENTO
+ */
+function drawMovingRoad() {
+    if (!assetsLoaded || !images.road) return;
+    
+    // Desenha a imagem da estrada duas vezes (uma em cima da outra)
+    // A primeira imagem na posição atual
+    ctx.drawImage(images.road, 0, roadOffset, canvas.width, canvas.height);
+    
+    // A segunda imagem logo acima da primeira (para criar o efeito contínuo)
+    ctx.drawImage(images.road, 0, roadOffset - canvas.height, canvas.width, canvas.height);
+    
+    // Atualiza a posição da estrada
+    roadOffset += ROAD_SPEED;
+    
+    // Quando a estrada se move completamente, reseta a posição
+    if (roadOffset >= canvas.height) {
+        roadOffset = 0;
+    }
+}
+
+/**
  * ATUALIZAÇÃO DO JOGO
  * Atualiza todos os elementos do jogo
  */
@@ -401,13 +426,8 @@ function render() {
     // Aplica tremor se estiver ativo
     applyScreenShake();
     
-    // Desenha fundo (imagem ou fallback)
-    if (assetsLoaded && images.road) {
-        ctx.drawImage(images.road, 0, 0, canvas.width, canvas.height);
-    } else {
-        ctx.fillStyle = '#20002c';
-        ctx.fillRect(0, 0, canvas.width, canvas.height);
-    }
+    // Desenha a estrada em movimento (substitui o drawImage antigo)
+    drawMovingRoad();
     
     // Desenha jogador
     player.draw();
