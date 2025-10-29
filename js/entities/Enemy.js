@@ -1,14 +1,10 @@
-// Enemy.js
 import { gameState } from "../gameState.js";
 import { GAME_CONFIG } from "../config.js";
-import { lerp, map } from "../utils/utils.js"; // Importe map e lerp
+import { lerp, map } from "../utils/utils.js";
 
 export class Enemy {
-  // roadXNormalized: Posição X relativa na estrada (-0.5 para esquerda, 0 para centro, 0.5 para direita)
-  // initialScreenY: Posição Y inicial na tela (geralmente o horizonte)
-  constructor(roadXNormalized, initialScreenY) {
-    this._roadXNormalized = roadXNormalized; // Propriedade interna para a posição X normalizada na estrada
-    this._screenY = initialScreenY; // Propriedade interna para a posição Y na tela
+  constructor(roadXNormalized, horizonY) {
+    this._roadXNormalized = roadXNormalized;
 
     this.baseWidth = GAME_CONFIG.ENEMY.WIDTH_FACTOR * gameState.canvas.width;
     this.baseHeight = GAME_CONFIG.ENEMY.HEIGHT_FACTOR * gameState.canvas.height;
@@ -19,18 +15,24 @@ export class Enemy {
           GAME_CONFIG.ENEMY.INITIAL_SPEED_FACTOR) +
       GAME_CONFIG.ENEMY.INITIAL_SPEED_FACTOR;
 
-    this.lane = null; // Ainda útil para lógica de pistas
+    this.lane = null;
     this.spawnTime = performance.now();
 
     // Parâmetros de perspectiva (consistentes com Renderer.js e GAME_CONFIG)
-    this.perspectiveHorizonY = gameState.canvas.height * 0.6; // Onde a estrada começa visualmente
-    // Ponto Y na tela onde o inimigo atinge sua escala máxima
+    this.perspectiveHorizonY = horizonY; // Usa o horizonY passado
+    // Ponto Y na tela onde o inimigo atinge a escala máxima
     this.perspectiveNearY =
       gameState.canvas.height * GAME_CONFIG.ENEMY.NEAR_PLAYER_Y_FACTOR;
     this.minEnemyScale = GAME_CONFIG.ENEMY.MIN_SPAWN_SCALE;
     this.maxEnemyScale = GAME_CONFIG.ENEMY.MAX_APPROACH_SCALE;
 
-    // Cálculo inicial de screenX e screenScale com base no _screenY inicial
+    // === AJUSTE PARA O SURGIMENTO NO HORIZONTE ===
+    // Calcula a altura escalada inicial quando o inimigo está no horizonte
+    const initialScaledHeight = this.baseHeight * this.minEnemyScale;
+    // Define _screenY (centro do inimigo) de forma que a BASE do inimigo fique exatamente na linha do horizonte (horizonY)
+    this._screenY = horizonY - initialScaledHeight / 2;
+
+    // Cálculo inicial de screenX e screenScale com base no _screenY calculado
     this._screenScale = this._calculateScale();
     this._screenX = this._calculateScreenX();
   }
@@ -53,6 +55,7 @@ export class Enemy {
     const roadWidthAtTop = canvas.width * 0.1; // Consistente com Renderer.js drawRoad
 
     // 't' representa a profundidade normalizada (0 no horizonte, 1 na parte inferior da tela)
+    // Usamos canvas.height aqui para mapear em toda a altura visível da estrada
     const t = map(this._screenY, this.perspectiveHorizonY, canvas.height, 0, 1);
     const currentRoadWidth = lerp(roadWidthAtTop, roadWidthAtBottom, t);
 
@@ -106,12 +109,36 @@ export class Enemy {
   }
 
   update(deltaTime) {
+    // === AJUSTE PARA A VELOCIDADE EXPONENCIAL ===
+    // 1. Calcula a posição Y normalizada na "zona de aproximação"
+    // Este valor vai de 0 (no horizonte) a 1 (na parte inferior da tela)
+    const normalizedY = map(
+      this._screenY,
+      this.perspectiveHorizonY,
+      gameState.canvas.height, // Mapeia até a parte inferior da tela para que a velocidade continue aumentando
+      0,
+      1
+    );
+    const clampedNormalizedY = Math.max(0, normalizedY); // Garante que o valor não seja negativo
+
+    // 2. Aplica uma curva exponencial para o fator de velocidade
+    // Este fator irá de PERSPECTIVE_SPEED_MIN_FACTOR (no horizonte)
+    // até PERSPECTIVE_SPEED_MAX_FACTOR (próximo ao jogador),
+    // com um crescimento acelerado definido pelo PERSPECTIVE_SPEED_EXPONENT.
+    const speedGrowthFactor = lerp(
+      GAME_CONFIG.ENEMY.PERSPECTIVE_SPEED_MIN_FACTOR,
+      GAME_CONFIG.ENEMY.PERSPECTIVE_SPEED_MAX_FACTOR,
+      Math.pow(clampedNormalizedY, GAME_CONFIG.ENEMY.PERSPECTIVE_SPEED_EXPONENT)
+    );
+
+    // 3. Calcula a velocidade de movimento real para este frame
     // Move o carro para baixo na tela (aproximando-se do jogador)
     this._screenY +=
-      this.speed *
-      deltaTime *
-      gameState.gameSpeed *
-      GAME_CONFIG.ENEMY.PERSPECTIVE_SPEED_MULTIPLIER;
+      this.speed * // Velocidade inicial aleatória do inimigo
+      gameState.gameSpeed * // Velocidade global do jogo, que aumenta com a dificuldade
+      GAME_CONFIG.ENEMY.PERSPECTIVE_SPEED_MULTIPLIER * // Multiplicador base de velocidade de perspectiva
+      speedGrowthFactor * // NOVO: Fator de crescimento exponencial da velocidade baseado na posição Y
+      deltaTime;
 
     // Recalcula screenX e screenScale com base no novo _screenY
     this._screenScale = this._calculateScale();
@@ -160,26 +187,22 @@ export function spawnEnemy() {
   const { canvas } = gameState;
 
   // Define a linha do horizonte Y (consistente com a classe Enemy)
-  const perspectiveHorizonY = canvas.height * 0.6;
+  const perspectiveHorizonY = canvas.height * 0.6; // Este valor define o horizonte visual da estrada
 
   const lane = Math.floor(Math.random() * GAME_CONFIG.ROAD_LANES);
 
   // Calcula a posição X normalizada para a pista
-  // Para 3 pistas, por exemplo:
-  // pista 0: aproximadamente -0.33 (centro da pista da esquerda)
-  // pista 1: 0 (centro da pista do meio)
-  // pista 2: aproximadamente 0.33 (centro da pista da direita)
-  const laneWidthFraction = 1 / GAME_CONFIG.ROAD_LANES; // Largura fracional de uma única pista (ex: 1/3)
-  // roadXNormalized varia de -0.5 a 0.5, onde 0 é o centro da estrada total
+  const laneWidthFraction = 1 / GAME_CONFIG.ROAD_LANES;
   const roadXNormalized = (lane + 0.5) * laneWidthFraction - 0.5;
 
+  // Instancia o inimigo, passando a posição X normalizada e o Y do horizonte
   const enemy = new Enemy(roadXNormalized, perspectiveHorizonY);
   enemy.lane = lane; // Mantém para referência
   gameState.enemies.push(enemy);
 }
 
 /**
- * Retorna um intervalo aleatório para spawn (não precisa de alterações)
+ * Retorna um intervalo aleatório para spawn
  */
 export function getRandomSpawnInterval() {
   const { SPAWN_INTERVAL_MIN, SPAWN_INTERVAL_MAX } = GAME_CONFIG.ENEMY;

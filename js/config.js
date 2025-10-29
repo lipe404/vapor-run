@@ -42,14 +42,19 @@ export const GAME_CONFIG = {
     MAX_SPEED_FACTOR: 0.008,
     WIDTH_FACTOR: 0.05,
     HEIGHT_FACTOR: 0.08,
-    // GROWTH_FACTOR: 0.002,
     SHADOW_BLUR: 10,
     SHADOW_COLOR: "#ff00ff",
+
     // NOVAS CONFIGURAÇÕES para perspectiva
-    PERSPECTIVE_SPEED_MULTIPLIER: 100, // Multiplicador para a velocidade de movimento no eixo Y. Ajuste para mais rápido/lento
+    PERSPECTIVE_SPEED_MULTIPLIER: 100, // Multiplicador para a velocidade de movimento no eixo Y
     MIN_SPAWN_SCALE: 0.05, // Escala mínima quando o inimigo aparece no horizonte
     MAX_APPROACH_SCALE: 1.0, // Escala máxima quando o inimigo está "próximo" do jogador
     NEAR_PLAYER_Y_FACTOR: 0.9, // Fator Y da tela onde o inimigo atinge a escala máxima
+
+    // NOVAS CONFIGURAÇÕES para velocidade exponencial
+    PERSPECTIVE_SPEED_MIN_FACTOR: 1, // Multiplicador base da velocidade (no horizonte)
+    PERSPECTIVE_SPEED_MAX_FACTOR: 20, // Multiplicador máximo da velocidade (próximo ao jogador)
+    PERSPECTIVE_SPEED_EXPONENT: 2.5, // Expoente para a curva de crescimento da velocidade (2.0 a 3.0 é um bom começo para um efeito exponencial notável)
   },
 
   // Estrada
