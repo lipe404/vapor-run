@@ -88,6 +88,6 @@ export const GAME_CONFIG = {
     car: "imgs/car.png",
     enemy: "imgs/enemy.png",
     road: "imgs/roadest.jpg",
-    palmTree: "imgs/palm_tree.png",
+    palmTree: "imgs/palm_tree.jpg",
   },
 };
