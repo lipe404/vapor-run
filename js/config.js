@@ -42,9 +42,14 @@ export const GAME_CONFIG = {
     MAX_SPEED_FACTOR: 0.008,
     WIDTH_FACTOR: 0.05,
     HEIGHT_FACTOR: 0.08,
-    GROWTH_FACTOR: 0.002,
+    // GROWTH_FACTOR: 0.002,
     SHADOW_BLUR: 10,
     SHADOW_COLOR: "#ff00ff",
+    // NOVAS CONFIGURAÇÕES para perspectiva
+    PERSPECTIVE_SPEED_MULTIPLIER: 100, // Multiplicador para a velocidade de movimento no eixo Y. Ajuste para mais rápido/lento
+    MIN_SPAWN_SCALE: 0.05, // Escala mínima quando o inimigo aparece no horizonte
+    MAX_APPROACH_SCALE: 1.0, // Escala máxima quando o inimigo está "próximo" do jogador
+    NEAR_PLAYER_Y_FACTOR: 0.9, // Fator Y da tela onde o inimigo atinge a escala máxima
   },
 
   // Estrada
