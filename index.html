@@ -4,11 +4,107 @@
         <meta charset="UTF-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
         <title>V A P O R R U N</title>
-        <link rel="stylesheet" href="style.css">
+        <!-- Tailwind CSS CDN -->
+        <script src="https://cdn.tailwindcss.com"></script>
+        <script>
+            tailwind.config = {
+                theme: {
+                    extend: {
+                        fontFamily: {
+                            'press-start': ['"Press Start 2P"', 'cursive'],
+                        },
+                        colors: {
+                            'vapor-purple-dark': '#20002c',
+                            'vapor-purple-mid': '#6f00ff',
+                            'vapor-pink': '#ff00ff',
+                            'vapor-magenta': '#ff1493',
+                            'vapor-cyan': '#00ffff',
+                            'vapor-blue': '#0000ff',
+                            'vapor-orange': '#ffa500',
+                        },
+                        keyframes: {
+                            glitch: {
+                                '0%': { textShadow: '2px 2px var(--tw-shadow-color-1)', transform: 'translate(0)' },
+                                '25%': { textShadow: '-2px -2px var(--tw-shadow-color-2)', transform: 'translate(2px, -2px)' },
+                                '50%': { textShadow: '2px -2px var(--tw-shadow-color-1)', transform: 'translate(-2px, 2px)' },
+                                '75%': { textShadow: '-2px 2px var(--tw-shadow-color-2)', transform: 'translate(2px, 2px)' },
+                                '100%': { textShadow: '2px 2px var(--tw-shadow-color-1)', transform: 'translate(0)' },
+                            },
+                            blink: {
+                                '0%, 100%': { opacity: '1' },
+                                '50%': { opacity: '0' },
+                            }
+                        },
+                        animation: {
+                            glitch: 'glitch 0.1s infinite alternate',
+                            blink: 'blink 1s ease-in-out infinite',
+                        }
+                    }
+                }
+            }
+        </script>
+        <!-- Importa a fonte do Google Fonts diretamente no HTML -->
+        <link
+            href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap"
+            rel="stylesheet">
     </head>
-    <body>
-        <div id="game-container">
-            <canvas id="gameCanvas"></canvas>
+    <body
+        class="bg-gradient-to-b from-vapor-purple-dark via-vapor-purple-mid to-vapor-magenta text-white font-press-start flex justify-center items-center h-screen overflow-hidden antialiased">
+
+        <div id="game-container"
+            class="relative w-[90vw] h-[90vh] max-w-[1200px] max-h-[800px] border-4 border-white/30 shadow-lg shadow-vapor-pink bg-black/20 backdrop-blur-md overflow-hidden flex justify-center items-center">
+            <!-- Canvas do Jogo -->
+            <canvas id="gameCanvas"
+                class="block w-full h-full transition-all duration-300 ease-out"></canvas>
+
+            <!-- Elementos da UI (controlados por JS) -->
+            <!-- Tela de Carregamento -->
+            <div id="loading-screen"
+                class="absolute inset-0 bg-black/90 flex flex-col justify-center items-center z-50">
+                <h1
+                    class="text-3xl sm:text-5xl text-vapor-cyan mb-8 animate-glitch shadow-vapor-pink shadow-vapor-blue">CARREGANDO...</h1>
+                <div class="w-3/4 bg-gray-700 rounded-full h-4">
+                    <div id="loading-bar"
+                        class="bg-vapor-pink h-4 rounded-full transition-all duration-100 ease-linear"
+                        style="width: 0%;"></div>
+                </div>
+            </div>
+
+            <!-- Tela Inicial -->
+            <div id="start-screen"
+                class="absolute inset-0 bg-black/80 flex flex-col justify-center items-center z-40 hidden">
+                <h1
+                    class="text-4xl sm:text-6xl text-vapor-cyan mb-8 animate-glitch shadow-vapor-pink shadow-vapor-blue">V
+                    A P O R R U N</h1>
+                <p id="start-button"
+                    class="text-xl sm:text-2xl text-white cursor-pointer hover:text-vapor-pink transition-colors animate-blink">PRESSIONE
+                    ENTER PARA INICIAR</p>
+                <div class="absolute bottom-4 text-sm text-gray-400">
+                    <p>Use &larr; e &rarr; para mover</p>
+                    <p class="mt-1">Use a barra de espaço para um boost (em
+                        breve)</p>
+                </div>
+            </div>
+
+            <!-- Tela de Game Over -->
+            <div id="game-over-screen"
+                class="absolute inset-0 bg-black/80 flex flex-col justify-center items-center z-40 hidden">
+                <h2
+                    class="text-5xl sm:text-7xl text-vapor-magenta mb-4 animate-glitch shadow-vapor-cyan shadow-vapor-pink">GAME
+                    OVER</h2>
+                <p class="text-2xl sm:text-3xl text-white mb-6">PONTUAÇÃO FINAL:
+                    <span id="final-score" class="text-vapor-cyan">0</span></p>
+                <p id="restart-button"
+                    class="text-xl sm:text-2xl text-white cursor-pointer hover:text-vapor-cyan transition-colors animate-blink">PRESSIONE
+                    ENTER PARA REINICIAR</p>
+            </div>
+
+            <!-- Pontuação Durante o Jogo -->
+            <div id="score-display"
+                class="absolute top-4 left-4 text-white text-xl sm:text-2xl z-30 hidden">
+                PONTUAÇÃO: <span id="current-score"
+                    class="text-vapor-cyan">0</span>
+            </div>
         </div>
 
         <script src="script.js"></script>
