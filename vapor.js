@@ -353,10 +353,10 @@ function render(now) {
   block(ctx,p,end,-1.18,1.18,'#4a2d51');block(ctx,p,end,-1,1,zone.road);
   block(ctx,p,end,-1.025,-.998,zone.tint);block(ctx,p,end,.998,1.025,zone.tint);
   if(Math.floor(dist/step)%7<3) {block(ctx,p,end,-.349,-.320,zone.mark);block(ctx,p,end,.320,.349,zone.mark);}
-  const playerZ=52, carW=clamps(W*.138,68,174);
+  const playerZ=W<680?87:52, carW=clamps(W*.138,68,174);
   gates.push({z:playerZ,me:true});
   if(g) for(const o of [...g.traffic,...g.rivals]) {
-    const z=o.z-dist+45;
+    const z=o.z-dist+playerZ-7;
     if(z>5&&z<far)gates.push({z,o});
   }
   gates.sort((a,b)=>b.z-a.z);
