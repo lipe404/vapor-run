@@ -9,3 +9,5 @@ Corrida arcade vaporwave em Canvas 2D. Três rotas, quatro carros originais, rá
 - **Áudio:** o navegador permite tocar a rádio após interação. O botão de som silencia tanto a rádio quanto os efeitos.
 
 Para testar localmente, rode `python3 -m http.server 8080` na raiz e abra `http://localhost:8080`. A página publicada usa o GitHub Pages. O código e os recursos anteriores permanecem no histórico e nas pastas originais.
+
+A física de contato usa detecção contínua. Para rodar os testes de colisão: `node --test contact.test.mjs`.

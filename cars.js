@@ -4,16 +4,16 @@ const model = (id, name, tagline, color, stats, shape) => Object.freeze({
 });
 
 export const CARS = Object.freeze([
-  model("ion-gt", "ION GT", "Precisão de pista, sob o neon.", "#4de9ef",
+  model("ion-gt", "ION GT", "Bom nas curvas.", "#4de9ef",
     { speed: .78, handling: .88, boost: .69 },
     { roof: 22, cabin: -50, deck: -31, shoulder: 43, light: "#a1fffa", deep: "#125369", dark: "#0b2e46", stripe: "#9affed", badge: "ION", style: "ribbon" }),
-  model("ember-rs", "EMBER RS", "Largo, nervoso e rápido na saída.", "#ff6c53",
+  model("ember-rs", "EMBER RS", "Arrancada forte.", "#ff6c53",
     { speed: .92, handling: .64, boost: .82 },
     { roof: 27, cabin: -48, deck: -33, shoulder: 45, light: "#ffb06c", deep: "#842635", dark: "#491b2c", stripe: "#ffe0a0", badge: "RS", style: "slots" }),
-  model("nocturne-v12", "NOCTURNE V12", "V12 rente ao chão, rei da reta.", "#bf79fa",
+  model("nocturne-v12", "NOCTURNE V12", "Melhor nas retas.", "#bf79fa",
     { speed: .98, handling: .57, boost: .91 },
     { roof: 18, cabin: -43, deck: -32, shoulder: 46, light: "#ff9afc", deep: "#643e99", dark: "#391d5c", stripe: "#f3b3fe", badge: "V12", style: "triple" }),
-  model("mirage-rally", "MIRAGE RALLY", "Suspensão alta, ágil nas curvas.", "#cef76c",
+  model("mirage-rally", "MIRAGE RALLY", "Mais fácil de controlar.", "#cef76c",
     { speed: .66, handling: .97, boost: .76 },
     { roof: 24, cabin: -58, deck: -38, shoulder: 40, light: "#efffac", deep: "#5f7f34", dark: "#354922", stripe: "#e9ff99", badge: "MR", style: "square" }),
 ]);
